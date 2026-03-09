@@ -1,14 +1,16 @@
-InstallOrLoadPack <- function(packs){
+InstallOrLoadPacks <- function(packs){
   create.pkg <- packs[!(packs %in% installed.packages()[, "Package"])]
   if (length(create.pkg))
     install.packages(create.pkg, dependencies = TRUE)
   sapply(packs, library, character.only = TRUE)
 }
+
+
 packages <- c("ggrepel", "ggplot2",  "data.table", "tm", "wordcloud2", "tidytext", 
               "dplyr", 'tidyverse', 'readxl', 'udpipe', 'writexl', 'openxlsx', 'rlang', 
               'lsa', 'shiny', 'wordcloud')
- 
-InstallOrLoadPack(packages)
+InstallOrLoadPacks(packages)
+
 
 Wordcloud2a <- function (data, size = 1, minSize = 0, gridSize = 0, fontFamily = "Segoe UI", 
                          fontWeight = "bold", color = "random-dark", backgroundColor = "white", 
@@ -59,14 +61,12 @@ Wordcloud2a <- function (data, size = 1, minSize = 0, gridSize = 0, fontFamily =
 }
 
 
-
-
-GetListOfStopwords <- function() {
-  
-  female_names_rus <- read.csv("female_names_rus.txt", header=FALSE)
-  male_names_rus <- read.csv("male_names_rus.txt", header=FALSE)
-  male_surnames_rus <- read.csv("male_surnames_rus.txt", header=FALSE)
-  stop_words_expanded <- c('и', 'й', 'г', 'единаяроссия', 'единый', 'время', 
+GetStopwords <- function() {
+  # V1 - имя первого столбца по умолчанию
+  female_names_rus <- tolower(read.csv("female_names_rus.txt", header=FALSE)$V1)
+  male_names_rus <- tolower(read.csv("male_names_rus.txt", header=FALSE)$V1)
+  male_surnames_rus <- tolower(read.csv("male_surnames_rus.txt", header=FALSE)$V1)
+  STOPWORDS_EXPANDED <- c('и', 'й', 'г', 'единаяроссия', 'единый', 'время', 
                            'территория', 'димитровграда', 'димитровград', 
                            'чебоксар', 'ядринский', 'житель', 'компания', 
                            'министр', 'дом', 'общественный',
@@ -243,13 +243,13 @@ GetListOfStopwords <- function() {
                            'первыетаврический', 'нашее', 'любима', 'историитатарстанный',
                            'ахтубинский', 'наримановский', 'умерло', 'погодаомск',
                            'рдд', 'хештег', 'особый', 'рддй', 'idвиталий', 'буть',
-                           'мбоу', 'сош', 'айдадомой', 'выступить'
+                           'мбоу', 'сош', 'айдадомой', 'выступить', 'наштатарстать',
+                           'раисрт'
   
                            
   )
   
-  
-  stop_words_short <- c('и', 'й', 'г', 'единаяроссия', 'единый', 'время', 'территория', 'димитровграда', 'димитровград', 
+  STOPWORDS_SHORT <- c('и', 'й', 'г', 'единаяроссия', 'единый', 'время', 'территория', 'димитровграда', 'димитровград', 
                         'чебоксар', 'ядринский', 'житель', 'компания', 'министр', 'дом', 'общественный',
                         'программа', 'мероприятие', 'условие', 'ситуация', 'гражданин', 'группа', 'организация',
                         'система', 'оао', 'ооо', 'пао', 'зао', 'центр', 'руководитель', 'конкурс', 'решить', 'говорить',
@@ -288,30 +288,66 @@ GetListOfStopwords <- function() {
                         'алло', 'оно', 'кому', 'тобой', 'таки', 'мой', 'нею', 'ваши', 'ваша', 'кем', 'мои',
                         'однако', 'сразу', 'свое', 'ними', 'всё', 'неё', 'тех', 'хотя', 'всем', 'тобою', 'тебе', 'одной', 'другие',
                         'буду', 'моё', 'своей', 'такое', 'всею', 'будут', 'своего', 'кого', 'свои', 'мог', 'нам', 'особенно', 'её',
-                        'наше', 'кроме', 'вообще', 'вон', 'мною', 'никто', 'это', 'изза', 'именно', 'поэтому', 'будьт', 'являться', 'чувашский', 'тыса', 'смочь', 'ваший', 'гльба', 'ать', 'уть', 'ивать', 'ольги', 'пенз', 'ер', 'иметь', 'олегнуть', 'сг', 'например', 'сообщить', 'сообщать', 'среди', 'нть', 'пер', 'зспермь', 'края', 'ради', 'назвать', 'важный')
-  extra_stop_words <- stop_words_expanded
-  stopwords_combined_list <- c(stopwords("russian"), extra_stop_words,
-                               tolower(male_names_rus$V1),
-                               tolower(male_surnames_rus$V1),
-                               tolower(female_names_rus$V1))
-  return(stopwords_combined_list)
+                        'наше', 'кроме', 'вообще', 'вон', 'мною', 'никто', 'это', 'изза', 'именно', 'поэтому', 'будьт', 'являться', 
+                       'чувашский', 'тыса', 'смочь', 'ваший', 'гльба', 'ать', 'уть', 'ивать', 'ольги', 'пенз', 'ер', 'иметь', 'олегнуть', 
+                       'сг', 'например', 'сообщить', 'сообщать', 'среди', 'нть', 'пер', 'зспермь', 'края', 'ради', 'назвать', 'важный',
+                       'наштатарстать', 'раисрт')
+  # в качестве extra_stopwords можно выбрать или STOPWORDS_EXPANDED, или STOPWORDS_SHORT
+  extra_stopwords <- STOPWORDS_EXPANDED
+  result_stopwords <- c(stopwords("russian"), extra_stopwords,
+                               male_names_rus,
+                               male_surnames_rus,
+                               female_names_rus)
+  return(result_stopwords)
 }
 
-stopwords_combined_list <- GetListOfStopwords()
+
+stopwords_combined_list <- GetStopwords()
 stopwords_combined_str <- paste(stopwords_combined_list, collapse = "|")
-basic_punctuation_marks_list <- c('.', ',', ';', ':', '!', '?', '-', '"', '(',
+PUNCTUATION_MARKS <- c('.', ',', ';', ':', '!', '?', '-', '"', '(',
                                   ')', '«', '»')
 
-label_radio_buttons <- "Метод излечения ключевых слов:"
-label_action_output_results <- "Вывод результатов"
-label_choose_file <- "Выбор файла"
-label_input_file_button <- "Открыть..."
-label_input_placeholder <- "Файл не выбран"
-label_calculation_begining <- "Ведутся вычисления."
-label_calculation_end <- "Вычисления окончены."
-width_of_sidebar_panel <- 5
-width_of_main_panel <- 7
-time_of_notification_duration <- 20
+LABEL_CHOOSE_RADIO_BUTTON <- "Метод извлечения ключевых слов:"
+LABEL_ACTION_OUTPUT_RESULTS <- "Вывод результатов"
+LABEL_ACTION_DOWNLOAD_RESULTS <- "Скачать результаты вычислений"
+LABEL_CHOOSE_FILE <- "Выбор файла"
+LABEL_FILE_INPUT_BUTTON <- "Открыть..."
+LABEL_FILE_INPUT_PLACEHOLDER <- "Файл не выбран"
+LABEL_CALCULATIONS_IN_PROGRESS <- "Ведутся вычисления."
+LABEL_CALCULATIONS_COMPLETED <- "Вычисления окончены."
+WIDTH_OF_SIDEBAR_PANEL <- 5
+WIDTH_OF_MAIN_PANEL <- 7
+TIME_OF_NOTIFICATION_DURATION <- 20
+MAX_REQUEST_SIZE <- 30*1024^2 # Почему такой?
+SPECIAL_MARKS <- paste0(
+  "[",
+  "«№",                                         # Спецсимволы кавычки и номер
+  "\U{1F600}-\U{1F64F}",                        # Эмодзи (смайлики)
+  "\U{1F300}-\U{1F5FF}",                        # Эмодзи (символы)
+  "\U{1F680}-\U{1F6FF}",                        # Эмодзи (транспорт)
+  "\U{1F1E0}-\U{1F1FF}",                        # Флаги стран
+  "\U{2500}-\U{2BEF}",                          # Геометрические фигуры и символы
+  "\U{2702}-\U{27B0}",                          # Разные символы
+  "\U{24C2}-\U{1F251}",                         # Дополнительные эмодзи
+  "\U{1f926}-\U{1f937}",                        # Жесты и люди
+  "\U{10000}-\U{10ffff}",                       # Дополнительные Unicode символы
+  "\u{2640}-\u{2642}",                          # Символы пола
+  "\u{2600}-\u{2B55}",                          # Астрологические и разные символы
+  "\u{200d}",                                   # Zero-width joiner
+  "\u{23cf}",                                   # Часы
+  "\u{23e9}",                                   # Кнопки воспроизведения
+  "\u{231a}",                                   # Часы
+  "\u{fe0f}",                                   # Variation selector
+  "\u{3030}",                                   # Волна
+  "\U{00B0}",                                   # Знак градуса
+  "\U{20BD}",                                   # Знак рубля
+  "]"
+)
+UDPIPE_PARALLEL_CORES = 8L # Определяет количество ядер, используемых для аннотирования
+  # с помощью параллельных вычислений. 
+  # Увеличение PARALLEL_CORES не ведет к улучшению производительности (пробовал 12L, 16L).
+  # При UDPIPE_PARALLEL_CORES = 4L производительность ниже, чем при 8L.
+
 
 ui <- fluidPage(
   tags$style(HTML("
@@ -377,7 +413,8 @@ ui <- fluidPage(
   titlePanel("Анализ регионов по разным периодам"),
   radioButtons( 
     inputId = "radio", 
-    label = label_radio_buttons, 
+    label = LABEL_CHOOSE_RADIO_BUTTON
+   , 
     choices = list( 
       "TF" = 1, 
       "RAKE" = 2
@@ -387,118 +424,131 @@ ui <- fluidPage(
               tabPanel("Период 1",
                        sidebarLayout(
                          sidebarPanel(
-                           fileInput("file1", label = label_choose_file, 
-                                     buttonLabel = label_input_file_button, 
-                                     placeholder = label_input_placeholder,
+                           fileInput("file1", label = LABEL_CHOOSE_FILE, 
+                                     buttonLabel = LABEL_FILE_INPUT_BUTTON, 
+                                     placeholder = LABEL_FILE_INPUT_PLACEHOLDER,
                                      accept = ".xlsx"),
-                           actionButton("analyze1", label_action_output_results),
-                           downloadButton("downloadData1", 
-                                          "Скачать результаты вычислений"),
-                           width = width_of_sidebar_panel
+                           actionButton("analyze1", LABEL_ACTION_OUTPUT_RESULTS),
+                           downloadButton("downloadData1", LABEL_ACTION_DOWNLOAD_RESULTS),
+                           width = WIDTH_OF_SIDEBAR_PANEL
                          ),
                          mainPanel(
                            wordcloud2Output("wordcloud1"),
                            plotOutput("barPlot1"),
                            #plotOutput("wordcloud1"),
                            tableOutput("wordTable1"),
-                           width = width_of_main_panel
+                           width = WIDTH_OF_MAIN_PANEL
                          )
                        )
               ),
               tabPanel("Период 2",
                        sidebarLayout(
                          sidebarPanel(
-                           fileInput("file2", label = label_choose_file, 
-                                     buttonLabel = label_input_file_button, 
-                                     placeholder = label_input_placeholder,
+                           fileInput("file2", label = LABEL_CHOOSE_FILE, 
+                                     buttonLabel = LABEL_FILE_INPUT_BUTTON, 
+                                     placeholder = LABEL_FILE_INPUT_PLACEHOLDER,
                                      accept = ".xlsx"),
-                           actionButton("analyze2", label_action_output_results),
-                           downloadButton("downloadData2", 
-                                          "Скачать результаты вычислений"),
-                           width = width_of_sidebar_panel
+                           actionButton("analyze2", LABEL_ACTION_OUTPUT_RESULTS),
+                           downloadButton("downloadData2", LABEL_ACTION_DOWNLOAD_RESULTS),
+                           width = WIDTH_OF_SIDEBAR_PANEL
                          ),
                          mainPanel(
                            wordcloud2Output("wordcloud2"),
                            plotOutput("barPlot2"),
                            tableOutput("wordTable2"),
-                           width = width_of_main_panel
+                           width = WIDTH_OF_MAIN_PANEL
                          )
                        )
               ),
               tabPanel("Период 3",
                        sidebarLayout(
                          sidebarPanel(
-                           fileInput("file3", label = label_choose_file, 
-                                     buttonLabel = label_input_file_button, 
-                                     placeholder = label_input_placeholder,
+                           fileInput("file3", label = LABEL_CHOOSE_FILE, 
+                                     buttonLabel = LABEL_FILE_INPUT_BUTTON, 
+                                     placeholder = LABEL_FILE_INPUT_PLACEHOLDER,
                                      accept = ".xlsx"),
-                           actionButton("analyze3", label_action_output_results),
-                           downloadButton("downloadData3", 
-                                          "Скачать результаты вычислений"),
-                           width = width_of_sidebar_panel
+                           actionButton("analyze3", LABEL_ACTION_OUTPUT_RESULTS),
+                           downloadButton("downloadData3", LABEL_ACTION_DOWNLOAD_RESULTS),
+                           width = WIDTH_OF_SIDEBAR_PANEL
                          ),
                          mainPanel(
                            wordcloud2Output("wordcloud3"),
                            plotOutput("barPlot3"),
                            tableOutput("wordTable3"), 
-                           width = width_of_main_panel
+                           width = WIDTH_OF_MAIN_PANEL
                          )
                        )
               ),
               tabPanel("Период 4",
                        sidebarLayout(
                          sidebarPanel(
-                           fileInput("file4", label = label_choose_file, 
-                                     buttonLabel = label_input_file_button, 
-                                     placeholder = label_input_placeholder,
+                           fileInput("file4", label = LABEL_CHOOSE_FILE, 
+                                     buttonLabel = LABEL_FILE_INPUT_BUTTON, 
+                                     placeholder = LABEL_FILE_INPUT_PLACEHOLDER,
                                      accept = ".xlsx"),
-                           actionButton("analyze4", label_action_output_results),
-                           downloadButton("downloadData4", 
-                                          "Скачать результаты вычислений"),
-                           width = width_of_sidebar_panel
+                           actionButton("analyze4", LABEL_ACTION_OUTPUT_RESULTS),
+                           downloadButton("downloadData4", LABEL_ACTION_DOWNLOAD_RESULTS),
+                           width = WIDTH_OF_SIDEBAR_PANEL
                          ),
                          mainPanel(
                            wordcloud2Output("wordcloud4"),
                            plotOutput("barPlot4"),
                            tableOutput("wordTable4"), 
-                           width = width_of_main_panel
+                           width = WIDTH_OF_MAIN_PANEL
                          )
                        )
               ),
               tabPanel("Период 5",
                        sidebarLayout(
                          sidebarPanel(
-                           fileInput("file5", label = label_choose_file, 
-                                     buttonLabel = label_input_file_button, 
-                                     placeholder = label_input_placeholder,
+                           fileInput("file5", label = LABEL_CHOOSE_FILE, 
+                                     buttonLabel = LABEL_FILE_INPUT_BUTTON, 
+                                     placeholder = LABEL_FILE_INPUT_PLACEHOLDER,
                                      accept = ".xlsx"),
-                           actionButton("analyze5", label_action_output_results),
-                           downloadButton("downloadData5", 
-                                          "Скачать результаты вычислений"),
-                           width = width_of_sidebar_panel
+                           actionButton("analyze5", LABEL_ACTION_OUTPUT_RESULTS),
+                           downloadButton("downloadData5", LABEL_ACTION_DOWNLOAD_RESULTS),
+                           width = WIDTH_OF_SIDEBAR_PANEL
                          ),
                          mainPanel(
                            wordcloud2Output("wordcloud5"),
                            plotOutput("barPlot5"),
                            tableOutput("wordTable5"), 
-                           width = width_of_main_panel
+                           width = WIDTH_OF_MAIN_PANEL
+                         )
+                       )
+              ),
+              tabPanel("Период 6",
+                       sidebarLayout(
+                         sidebarPanel(
+                           fileInput("file6", label = LABEL_CHOOSE_FILE, 
+                                     buttonLabel = LABEL_FILE_INPUT_BUTTON, 
+                                     placeholder = LABEL_FILE_INPUT_PLACEHOLDER,
+                                     accept = ".xlsx"),
+                           actionButton("analyze6", LABEL_ACTION_OUTPUT_RESULTS),
+                           downloadButton("downloadData6", LABEL_ACTION_DOWNLOAD_RESULTS),
+                           width = WIDTH_OF_SIDEBAR_PANEL
+                         ),
+                         mainPanel(
+                           wordcloud2Output("wordcloud6"),
+                           plotOutput("barPlot6"),
+                           tableOutput("wordTable6"), 
+                           width = WIDTH_OF_MAIN_PANEL
                          )
                        )
               ),
               tabPanel("Оценка динамики",
                        actionButton("compareFilesBtn", "Сравнить проанализированные файлы"),
-                       downloadButton("downloadDataCompare", 
-                                      "Скачать результаты вычислений"),
+                       downloadButton("downloadDataCompare", LABEL_ACTION_DOWNLOAD_RESULTS),
                        tableOutput("compareFilesTable"),
-                       plotOutput("dynamicPlotLimited"),
-                       plotOutput("dynamicPlotAll"),
-                       
+                       plotOutput("trendMapLimited"),
+                       # plotOutput("dynamicPlotAll"), # сейчас не используется.
               )
   )
 )
 
+
 server <- function(input, output, session) {
-  options(shiny.maxRequestSize=30*1024^2)
+  options(shiny.maxRequestSize=MAX_REQUEST_SIZE)
   files_preprocessed_data_frequency <- reactiveValues()
   files_preprocessed_data_rake <- reactiveValues()
   # Данные для построения облаков слов.
@@ -537,12 +587,22 @@ server <- function(input, output, session) {
   word_table_tf_5 <- reactiveVal(NULL)
   word_table_rake_5 <- reactiveVal(NULL)
   
-  cos_mat_reactive_tf <- reactiveVal(NULL)
-  trend_map_reactive_tf <- reactiveVal(NULL)
-  cos_mat_reactive_rake <- reactiveVal(NULL)
-  trend_map_reactive_rake <- reactiveVal(NULL)  
+  wordcloud_data_tf_6 <- reactiveVal(NULL)
+  wordcloud_data_rake_6 <- reactiveVal(NULL)
+  barplot_tf_6 <- reactiveVal(NULL)
+  barplot_rake_6 <- reactiveVal(NULL)
+  word_table_tf_6 <- reactiveVal(NULL)
+  word_table_rake_6 <- reactiveVal(NULL)
   
-  amount_of_words_in_wordcloud <- 30
+  cos_mat_reactive_tf <- reactiveVal(NULL)
+  trend_map_plot_tf <- reactiveVal(NULL)
+  cos_mat_reactive_rake <- reactiveVal(NULL)
+  trend_map_plot_rake <- reactiveVal(NULL)  
+  # для перевода тренд-карт на английский
+  trend_map_df_tf <- reactiveVal(NULL)
+  trend_map_df_rake <- reactiveVal(NULL)
+  
+  
   # Удаление лишних пробелов бесполезно, так как их устраняют  при токенизации,
   # Приведение текста к кодировке UTF-8 может быть полезно
   # Удаление цифр полезно
@@ -550,39 +610,60 @@ server <- function(input, output, session) {
   # при keywords_rake и udpipe_annotate
   CleanCorpusRake <- function(corpus_to_use){ 
     corpus_to_use %>%
-      # tm_map(removePunctuation) %>%
-      tm_map(stripWhitespace) %>%
-      tm_map(content_transformer(function(x) iconv(x, to='UTF-8'))) %>%
-      tm_map(removeNumbers) %>%
-      tm_map(content_transformer(tolower)) 
+      # tm_map(removePunctuation) %>% # удаление стандартных знаков пунктуации, 
+            # знаки пунктуации являются разделителями фраз 
+            # при выделении ключевых фраз с помощью RAKE.
+            # Поэтому перед использованием RAKE не нужно удалять знаки пунктуации.
+      tm_map(stripWhitespace) %>%  
+      tm_map(content_transformer(function(x) iconv(x, to='UTF-8'))) %>% # приведение к UTF8
+      tm_map(removeNumbers) %>% # удаление цифр
+      tm_map(content_transformer(tolower)) # приведение к нижнему регистру
   }
-  
   
   
   # все команды этой функции совпадают с соотв-ми командами алгоритма для 14 регионов
   CleanCorpusFrequency <- function(corpus_to_use){  
     corpus_to_use %>%
-      tm_map(removePunctuation) %>%
-      tm_map(stripWhitespace) %>%
-      tm_map(content_transformer(function(x) iconv(x, to='UTF-8'))) %>%
-      tm_map(removeNumbers) %>%
-      tm_map(content_transformer(tolower)) 
+      tm_map(removePunctuation) %>%  # удаление стандартных знаков пунктуации, 
+      tm_map(stripWhitespace) %>%    
+      tm_map(content_transformer(function(x) iconv(x, to='UTF-8'))) %>% # приведение к UTF8
+      tm_map(removeNumbers) %>% # удаление цифр
+      tm_map(content_transformer(tolower)) # приведение к нижнему регистру
   }
   
-  GetRakeKeywords <- function(file) {
+  
+  GetReplacedText <- function(replacements, text) {
+    for (pattern in names(replacements)) {
+      text <- gsub(pattern, replacements[[pattern]], text, perl = TRUE)
+    }
+    return(text)
+  }
+  
+  
+  GetRakeKeywords <- function(input_file) {
     # Проверка на корректность ввода файла. 
     # Если файл введен некорректно, то событие (ObserveEvent), 
     # вызввавшее функцию останавливаетя.
-    req(file)
-    showNotification(label_calculation_begining, duration = time_of_notification_duration)
-    input_data <- as.data.frame(read_excel(file$datapath, col_names = FALSE)) 
-    # load_stopwords()
-    # Было:
-    # corp_city_df <- CleanCorpusFrequency(VCorpus(VectorSource(input_data)))
-    # Стало:
+    req(input_file)
+    showNotification(LABEL_CALCULATIONS_IN_PROGRESS, duration = TIME_OF_NOTIFICATION_DURATION)
+    input_data <- as.data.frame(read_excel(input_file$datapath, col_names = FALSE)) 
+    
     corp_city_df <- CleanCorpusRake(VCorpus(VectorSource(input_data)))
-    corp_city_df[["1"]][["content"]] <- gsub("[«№\U{1F600}-\U{1F64F}\U{1F300}-\U{1F5FF}\U{1F680}-\U{1F6FF}\U{1F1E0}-\U{1F1FF}\U{2500}-\U{2BEF}\U{2702}-\U{27B0}\U{24C2}-\U{1F251}\U{1f926}-\U{1f937}\U{10000}-\U{10ffff}\u{2640}-\u{2642}\u{2600}-\u{2B55}\u{200d}\u{23cf}\u{23e9}\u{231a}\u{fe0f}\u{3030}\U{00B0}\U{20BD}]", "", corp_city_df[["1"]][["content"]], perl = TRUE)
-    corp_city_df[["1"]][["content"]] <- gsub("\\b\\S*(http|vk)\\S*\\b", "", corp_city_df[["1"]][["content"]], perl = TRUE)
+    # replacements <- list(
+    #   SPECIAL_MARKS = "",
+    #   "\\b\\S*(http|vk)\\S*\\b" = "",
+    #   "движениепервых" = "движение первых",
+    #   "навигаторыдетство" = "навигаторы детство",
+    #   "новостипервых" = "новости первых",
+    #   "фотоомск" = "фото омск",
+    #   "большаяучительскаянеделя" = "большая учительская неделя",
+    #   "годпедагоганаставник" = "год педагога наставник",
+    #   "государственныйсоветреспублики" = "государственный совет республики"
+    # )
+    # corp_city_df[["1"]][["content"]] <- GetReplacedText(replacements, corp_city_df[["1"]][["content"]])
+
+    corp_city_df[["1"]][["content"]] <- gsub(SPECIAL_MARKS, "", corp_city_df[["1"]][["content"]], perl = TRUE)
+    corp_city_df[["1"]][["content"]] <- gsub("\\b\\S*(http|vk)\\S*\\b", "", corp_city_df[["1"]][["content"]], perl = TRUE) # удаление ссылок
     corp_city_df[["1"]][["content"]] <- gsub("движениепервых", "#движение первых#", corp_city_df[["1"]][["content"]], perl = TRUE)
     corp_city_df[["1"]][["content"]] <- gsub("навигаторыдетство", "#навигаторы детство#", corp_city_df[["1"]][["content"]], perl = TRUE)
     corp_city_df[["1"]][["content"]] <- gsub("новостипервых", "#новости первых#", corp_city_df[["1"]][["content"]], perl = TRUE)
@@ -591,7 +672,6 @@ server <- function(input, output, session) {
     corp_city_df[["1"]][["content"]] <- gsub("годпедагоганаставник", "#год педагога наставник#", corp_city_df[["1"]][["content"]], perl = TRUE)
     corp_city_df[["1"]][["content"]] <- gsub("государственныйсоветреспублики", "#государственный совет республики# ", corp_city_df[["1"]][["content"]], perl = TRUE)
     
-    
     # corp_city_df[["1"]][["content"]] <- str_remove_all(corp_city_df[["1"]][["content"]], "\b\\S*(http|vk)\\S*\b")
     
     # Попробовал использовать russian-gsd-ud-2.15-241121.udpipe.
@@ -599,17 +679,25 @@ server <- function(input, output, session) {
     name_of_gsd_model <- 'russian-gsd-ud-2.5-191206.udpipe'
     if (!file.exists(name_of_gsd_model))
     {
-      gsd_model_raw <- udpipe_download_model(language = "russian-gsd")
+      # нужно ли помещать модель в переменную?
+      gsd_model_raw <- udpipe_download_model(language = "russian-gsd") 
     }
     gsd_model <- udpipe_load_model(file = name_of_gsd_model)
-    x <- udpipe_annotate(gsd_model, x = corp_city_df[["1"]][["content"]],  parser = "none")
-    x <- as.data.frame(x)
+    
+    # IMPORTANT: самая ресурсоемкая строка. Ее выполнение занимает 80-90% времени обработки файла (среза)
+    # parallel.cores = 8L сильно увеличивает производительность.
+    # Для Башкортастан_посты_2023.xlsx (1,4 Мб) при последовательном исполнении (parallel.cores = 1L)
+    # время исполнения udpipe(...) - 1 мин. 38 сек., а общее время - 1 мин. 41 сек.
+    # При parallel.cores = 8L время исполнения udpipe(...) - 28 сек., а общее время - 35 сек.
+    annotated_texts_df <- udpipe(object = gsd_model, x = corp_city_df[["1"]][["content"]],  
+                                 parser = "none", parallel.cores = 1L)
+    show("Текст аннотирован")   
+    annotated_texts_df <- as.data.frame(annotated_texts_df)
     # до сюда строки повторяют код функции GetPreprocessedTextsWordList
-    # show(x)
+
+    lemmas <- annotated_texts_df$lemma 
     
-    tmp <- x$lemma 
-    
-    tmp <- gsub("[[:punct:]]", "", tmp)
+    lemmas <- gsub("[[:punct:]]", "", lemmas)
     # for (i in 1:length(tmp))
     # {
     #   show(tmp[i])
@@ -637,39 +725,32 @@ server <- function(input, output, session) {
     # tmp <- str_replace_all(tmp, '№', '')
     # tmp <- str_replace_all(tmp, '−', '')
     # tmp <- str_replace_all(tmp, '—', '')
-    tmp <- str_replace_all(tmp, 'правительстворазвитие', 'развитие')
+    lemmas <- str_replace_all(lemmas, 'правительстворазвитие', 'развитие')
     # tmp <- str_replace_all(tmp, 'правительстворб', 'правительство')
-    tmp <- str_replace_all(tmp, 'цифровый', 'цифровой')
-    tmp <- str_replace_all(tmp, 'научныймощность', 'научный мощность')
-    tmp <- str_replace_all(tmp, 'club', '')
-    tmp <- str_replace_all(tmp, 'ветр', 'ветер')
-    tmp <- str_replace_all(tmp, 'школьник', 'школа')
-    tmp <- str_replace_all(tmp, 'школьный', 'школа')
+    lemmas <- str_replace_all(lemmas, 'цифровый', 'цифровой')
+    lemmas <- str_replace_all(lemmas, 'научныймощность', 'научный мощность')
+    lemmas <- str_replace_all(lemmas, 'club', '')
+    lemmas <- str_replace_all(lemmas, 'ветр', 'ветер')
+    lemmas <- str_replace_all(lemmas, 'школьник', 'школа')
+    lemmas <- str_replace_all(lemmas, 'школьный', 'школа')
     # tmp <- str_replace_all(tmp, 'правительствомарийэть', 'правительство')
-    tmp <- str_replace_all(tmp, 'молние', 'молния')
+    lemmas <- str_replace_all(lemmas, 'молние', 'молния')
     
-    tmp <- str_replace_all(tmp, 'полицияроссия', 'полиция')
-    tmp <- str_replace_all(tmp, 'осуждеть', 'осуждать')
-    tmp <- str_replace_all(tmp, 'умвд', 'мвд') 
-    tmp <- str_replace_all(tmp, 'юнармеец', 'юнармия') 
-    tmp <- str_replace_all(tmp, 'движениепервый', 'движениепервых') 
-    tmp <- str_replace_all(tmp, 'перевозкий', 'перевозка') 
-    tmp <- str_replace_all(tmp, 'юнармейский', 'юнармия') 
+    lemmas <- str_replace_all(lemmas, 'полицияроссия', 'полиция')
+    lemmas <- str_replace_all(lemmas, 'осуждеть', 'осуждать')
+    lemmas <- str_replace_all(lemmas, 'умвд', 'мвд') 
+    lemmas <- str_replace_all(lemmas, 'юнармеец', 'юнармия') 
+    lemmas <- str_replace_all(lemmas, 'движениепервый', 'движениепервых') 
+    lemmas <- str_replace_all(lemmas, 'перевозкий', 'перевозка') 
+    lemmas <- str_replace_all(lemmas, 'юнармейский', 'юнармия') 
     # tmp <- tmp[!grepl("\\b\\w*(http|vk)\\S*\\b", tmp)]  # Удаление терминов, содержащих http или vk
     # tmp <- tmp[sapply(tmp, nchar) > 0]
     
-    x$lemma <- tmp
-    show(x)
-    # Оставлять только существительные и прилагательные. 
-    # Стоп-слова "мои" используются.
-    # В качестве терминов берутся слова из таблицы x из столбца lemma,
-    # то есть начальные формы слов.
-    # Оставлять только фразы, частота встречаемости которых >= параметра n_min
-    # Метод keywords_rake возвращает таблицу со столбцами keyword, ngram, freq, rake;
-    # ключевые фразы в таблице отсортированы по убыванию столбца rake. 
+    annotated_texts_df$lemma <- lemmas
     
-    # Определение функции keywords_rake с параметрами
-    keywords_rake_test <- function(x, term, group, relevant = rep(TRUE, nrow(x)), ngram_max = 2, n_min = 30, sep = " ") {
+    
+    # Определение функции keywords_rake с некоторыми изменениями
+    keywords_rake_test <- function(x, term, group, relevant = rep(TRUE, nrow(annotated_texts_df)), ngram_max = 2, n_min = 30, sep = " ") {
       # Объявление переменных для избежания предупреждений при проверке пакета
       .relevant <- .N <- keyword_id <- keyword <- degree <- word <- freq <- ngram <- rake <- rake_word_score <- NULL
 
@@ -761,7 +842,7 @@ server <- function(input, output, session) {
        'приятный поездка', 'малый класс', 'социальный сеть', 
        'юнармия', 'отряд', 'детский', 'поздравление первый')
       
-      # Добавлено мной.Фильтрация через %in% с отрицанием
+      # Добавлено мной. Фильтрация через %in% с отрицанием
       keywords <- keywords[!keyword %in% exclude_phrases, ]
       
       # Сортировка результатов по убыванию RAKE
@@ -777,35 +858,34 @@ server <- function(input, output, session) {
       keywords
     }
     
-    # min_freq_of_phrase <- 10
-    min_freq_of_phrase <- 0
-    keywords_rake_df <- keywords_rake_test(x, term = "lemma", group = c("sentence_id"),
-                                      relevant = x$upos %in% c("NOUN", "ADJ") &
-                                        !(x$lemma %in% stopwords_combined_list),
+    
+    # Оставлять только существительные и прилагательные. 
+    # В качестве терминов берутся слова из таблицы annotated_texts_df из столбца lemma,
+    # то есть начальные формы слов.
+    # Оставлять только фразы, частота встречаемости которых >= параметра n_min
+    # Метод keywords_rake возвращает таблицу со столбцами keyword, ngram, freq, rake;
+    # ключевые фразы в таблице отсортированы по убыванию столбца rake. 
+    
+    min_freq_of_phrase <- 10
+    keywords_rake_df <- keywords_rake_test(annotated_texts_df, term = "lemma", group = c("sentence_id"),
+                                      relevant = annotated_texts_df$upos %in% c("NOUN", "ADJ") &
+                                        !(annotated_texts_df$lemma %in% stopwords_combined_list),
                                       ngram_max = 3, n_min = min_freq_of_phrase)
     show(keywords_rake_df)
-    # for(keyword in keywords_rake_df$keyword){
-    #   show
-    # }
-    # keywords_rake_df <- keywords_rake_test(x, term = "lemma", group = c("sentence_id"),
-    #                                        relevant = x$upos %in% c("NOUN", "ADJ") &
-    #                                          !(x$lemma %in% stopwords_combined_list),
-    #                                        ngram_max = 3, n_min = 10)
     return(keywords_rake_df)
   }
   
   
   # все команды этой функции совпадают с соотв-ми командами алгоритма для 14 регионов
-  GetPreprocessedTextsWordList <- function(file) {   
+  GetTFIDFKeywords <- function(file) {   
     # Проверка на корректность ввода файла. 
     # Если файл введен некорректно, то событие (ObserveEvent), 
     # вызввавшее функцию останавливаетя.
     req(file)
-    showNotification(label_calculation_begining, duration = time_of_notification_duration)
+    showNotification(LABEL_CALCULATIONS_IN_PROGRESS, duration = TIME_OF_NOTIFICATION_DURATION)
     input_data <- as.data.frame(read_excel(file$datapath, col_names = FALSE)) 
-    # load_stopwords()
     corp_city_df <- CleanCorpusFrequency(VCorpus(VectorSource(input_data)))
-    corp_city_df[["1"]][["content"]] <- gsub("[\U{1F600}-\U{1F64F}\U{1F300}-\U{1F5FF}\U{1F680}-\U{1F6FF}\U{1F1E0}-\U{1F1FF}\U{2500}-\U{2BEF}\U{2702}-\U{27B0}\U{24C2}-\U{1F251}\U{1f926}-\U{1f937}\U{10000}-\U{10ffff}\u{2640}-\u{2642}\u{2600}-\u{2B55}\u{200d}\u{23cf}\u{23e9}\u{231a}\u{fe0f}\u{3030}\U{00B0}\U{20BD}]", "", corp_city_df[["1"]][["content"]], perl = TRUE)
+    corp_city_df[["1"]][["content"]] <- gsub(SPECIAL_MARKS, "", corp_city_df[["1"]][["content"]], perl = TRUE)
     corp_city_df[["1"]][["content"]] <- gsub("\\b\\S*(http|vk)\\S*\\b", "", corp_city_df[["1"]][["content"]], perl = TRUE)
     corp_city_df[["1"]][["content"]] <- gsub("движениепервых", "движение первых", corp_city_df[["1"]][["content"]], perl = TRUE)
     corp_city_df[["1"]][["content"]] <- gsub("навигаторыдетство", "навигаторы детство", corp_city_df[["1"]][["content"]], perl = TRUE)
@@ -816,151 +896,83 @@ server <- function(input, output, session) {
     corp_city_df[["1"]][["content"]] <- gsub("государственныйсоветреспублики", "государственный совет республики ", corp_city_df[["1"]][["content"]], perl = TRUE)
     
     
+    # replacements <- list(
+    #   SPECIAL_MARKS = "",
+    #   "\\b\\S*(http|vk)\\S*\\b" = "",
+    #   "движениепервых" = "движение первых",
+    #   "навигаторыдетство" = "навигаторы детство",
+    #   "новостипервых" = "новости первых",
+    #   "фотоомск" = "фото омск",
+    #   "большаяучительскаянеделя" = "большая учительская неделя",
+    #   "годпедагоганаставник" = "год педагога наставник",
+    #   "государственныйсоветреспублики" = "государственный совет республики"
+    # )
+    # text <- corp_city_df[["1"]][["content"]]
+    # for (pattern in names(replacements)) {
+    #   text <- gsub(pattern, replacements[[pattern]], text, perl = TRUE)
+    # }
+    # corp_city_df[["1"]][["content"]] <- text
+    
+    
+    
     if (!file.exists('russian-gsd-ud-2.5-191206.udpipe'))
     {
+      # нужно ли помещать модель в переменную?
       gsd_model_raw <- udpipe_download_model(language = "russian-gsd")
     }
     gsd_model <- udpipe_load_model(file = 'russian-gsd-ud-2.5-191206.udpipe')
-    x <- udpipe_annotate(gsd_model, x = corp_city_df[["1"]][["content"]],  parser = "none")
-    x <- as.data.frame(x)
+    # IMPORTANT: самая ресурсоемкая строка. Ее выполнение занимает 60-70% времени обработки файла (среза)
+    # parallel.cores = 8L сильно увеличивает производительность.
+    # Для Башкортастан_посты_2023.xlsx (1,4 Мб) при последовательном исполнении (parallel.cores = 1L)
+    # время исполнения udpipe(...) - 1 мин. 39 сек., а общее время - 2 мин. 36 сек.
+    # При parallel.cores = 8L время исполнения udpipe(...) - 37 сек., а общее время - 1 мин. 33 сек.
+    annotated_texts_df <- udpipe(object = gsd_model, x = corp_city_df[["1"]][["content"]],  
+                                 parser = "none", parallel.cores = UDPIPE_PARALLEL_CORES)
+    show("Текст аннотирован")   
+    annotated_texts_df <- as.data.frame(annotated_texts_df)
     
-    # RAKE 
-    # show(x)
-    # show(stopwords_combined_list)
-    
-    # Удаление стоп-слов. Оставлять только существительные и прилагательные.
-    # В качестве терминов берутся слова из таблицы x из столбца lemma,
-    # то есть начальные формы слов.
-    # Оставлять только фразы, частота встречаемости которых >= параметра n_min
-    # Метод keywords_rake возвращает таблицу со столбцами keyword, ngram, freq, rake;
-    # ключевые фразы в таблице отсортированы по убыванию столбца rake. 
-    # keywords_rake_df <- keywords_rake(x, term = "lemma", group = c("sentence_id"), 
-    #                                   relevant = x$upos %in% c("NOUN", "ADJ") & !(x$lemma %in% stopwords_combined_list), n_min = 3)
-    # show(keywords_rake_df)
-    # keywords_rake_list <- keywords_rake_df$keyword
-    # keywords_rake_list <- noquote(keywords_rake_list)
-    # show(keywords_rake_list)
-    
-    
-    
-    # Эта часть кода не выполняет полезной работы сейчас 
-    
-    x$lemma <- noquote(x$lemma)
-    x$lemma <- str_replace_all(x$lemma, "[[:punct:]]", "")
-    tmp <- x$lemma
-    tmp <- str_replace_all(x$lemma, paste("\\b(", stopwords_combined_str, ")\\b"), "")
-    tmp <- str_replace_all(tmp, '№', '')
-    tmp <- str_replace_all(tmp, '−', '')
-    tmp <- str_replace_all(tmp, '—', '')
-    tmp <- str_replace_all(tmp, 'правительстворазвитие', 'развитие')
+    # TODO: Что значит этот комментарий здесь: "Эта часть кода не выполняет полезной работы сейчас"?
+    annotated_texts_df$lemma <- noquote(annotated_texts_df$lemma)
+    annotated_texts_df$lemma <- str_replace_all(annotated_texts_df$lemma, "[[:punct:]]", "")
+    lemmas <- annotated_texts_df$lemma
+    lemmas <- str_replace_all(annotated_texts_df$lemma, paste("\\b(", stopwords_combined_str, ")\\b"), "")
+    lemmas <- str_replace_all(lemmas, '№', '')
+    lemmas <- str_replace_all(lemmas, '−', '')
+    lemmas <- str_replace_all(lemmas, '—', '')
+    lemmas <- str_replace_all(lemmas, 'правительстворазвитие', 'развитие')
     # tmp <- str_replace_all(tmp, 'правительстворб', 'правительство')
-    tmp <- str_replace_all(tmp, 'цифровый', 'цифровой')
-    tmp <- str_replace_all(tmp, 'научныймощность', 'научный мощность')
-    tmp <- str_replace_all(tmp, 'club', '')
-    tmp <- str_replace_all(tmp, 'ветр', 'ветер')
-    tmp <- str_replace_all(tmp, 'школьник', 'школа')
-    tmp <- str_replace_all(tmp, 'школьный', 'школа')
+    lemmas <- str_replace_all(lemmas, 'цифровый', 'цифровой')
+    lemmas <- str_replace_all(lemmas, 'научныймощность', 'научный мощность')
+    lemmas <- str_replace_all(lemmas, 'club', '')
+    lemmas <- str_replace_all(lemmas, 'ветр', 'ветер')
+    lemmas <- str_replace_all(lemmas, 'школьник', 'школа')
+    lemmas <- str_replace_all(lemmas, 'школьный', 'школа')
     # tmp <- str_replace_all(tmp, 'правительствомарийэть', 'правительство')
-    tmp <- str_replace_all(tmp, 'молние', 'молния')
+    lemmas <- str_replace_all(lemmas, 'молние', 'молния')
     # tmp <- str_replace_all(x$lemma, paste("\\b(", stopwords_combined_str, ")\\b"), "") # без этого остается часто повторяющееся слово "правительство"
     
-    tmp <- str_replace_all(tmp, 'полицияроссия', 'полиция')
-    tmp <- str_replace_all(tmp, 'осуждеть', 'осуждать')
-    tmp <- str_replace_all(tmp, 'умвд', 'мвд') 
-    tmp <- str_replace_all(tmp, 'юнармеец', 'юнармия') 
-    tmp <- str_replace_all(tmp, 'движениепервый', 'движениепервых')
-    tmp <- str_replace_all(tmp, 'перевозкий', 'перевозка') 
-    tmp <- str_replace_all(tmp, 'юнармейский', 'юнармия') 
+    lemmas <- str_replace_all(lemmas, 'полицияроссия', 'полиция')
+    lemmas <- str_replace_all(lemmas, 'осуждеть', 'осуждать')
+    lemmas <- str_replace_all(lemmas, 'умвд', 'мвд') 
+    lemmas <- str_replace_all(lemmas, 'юнармеец', 'юнармия') 
+    lemmas <- str_replace_all(lemmas, 'движениепервый', 'движениепервых')
+    lemmas <- str_replace_all(lemmas, 'перевозкий', 'перевозка') 
+    lemmas <- str_replace_all(lemmas, 'юнармейский', 'юнармия') 
     
-    tmp <- str_replace_all(tmp, 'первый', '') # этим отличается от rake
-    # tmp <- tmp[!grepl("\\b\\w*(http|vk)\\S*\\b", tmp)]  # Удаление терминов, содержащих http или vk
-    tmp <- tmp[sapply(tmp, nchar) > 0]
-    # show(tmp)
-    return(tmp)
+    lemmas <- str_replace_all(lemmas, 'первый', '') # этим отличается от rake
+    lemmas <- lemmas[sapply(lemmas, nchar) > 0]
+    return(lemmas)
   }
   
-  AnalyzeAndRenderRake <-  function(file_input, id_plot_output, id_table_output, id_wordcloud_output) { 
-    keywords_rake_df <- GetRakeKeywords(file_input)
-    # show(keywords_rake_df)
-    keywords_rake_df_for_output <- keywords_rake_df[c("keyword", "freq", "rake")]
-    # show(keywords_rake_df_for_output)
-    name_of_input_file <- file_input$name
-    output[[id_plot_output]] <- renderPlot({
-      diagram_for_output <- ggplot(keywords_rake_df_for_output[1:10, ], aes(x = reorder(keyword, rake), y = rake)) +
-        geom_bar(stat = "identity") +
-        coord_flip() +
-        labs(title = "Слова с наибольшим индексом RAKE", x = "Слова", y = "Индекс RAKE") +
-        theme_gray(base_size = 26)
-      # # wordclouds_rake[[id_wordcloud_output]](diagram_for_output)
-      # # ggsave(paste(name_of_input_file, "RAKE Barplot.png"), plot = diagram_for_output, width = 15, height = 6, dpi = 300)
-      
-      # barplots_rake[[id_plot_output]] <- keywords_rake_df_for_output[1:10, ]
-      if (id_plot_output == "barPlot1")
-        barplot_rake_1(diagram_for_output)
-      else if (id_plot_output == "barPlot2")
-        barplot_rake_2(diagram_for_output)
-      else if (id_plot_output == "barPlot3")
-        barplot_rake_3(diagram_for_output)
-      else if (id_plot_output == "barPlot4")
-        barplot_rake_4(diagram_for_output)
-      else if (id_plot_output == "barPlot5")
-        barplot_rake_5(diagram_for_output)
-      
-      diagram_for_output
-      # ggplot(keywords_rake_df_for_output[1:10, ], aes(x = reorder(keyword, rake), y = rake)) +
-      #   geom_bar(stat = "identity") +
-      #   coord_flip() +
-      #   labs(title = "Ключевые слова", x = "Слова", y = "Индекс RAKE") +
-      #   theme_gray(base_size = 26)
-    })
-    output[[id_table_output]] <- renderTable({
-      colnames(keywords_rake_df_for_output) <- c("Ключевые слова", "Частота встречаемости", "RAKE")
-      table_rake_for_output <- head(keywords_rake_df_for_output, 10)
-      #ggsave(filename = paste(name_of_input_file, "RAKE Table.png"), plot = table_rake_for_output, width = 8, height = 6, dpi = 300)
-      # table_rake_for_output
-      if (id_table_output == "wordTable1")
-        word_table_rake_1(table_rake_for_output)
-      else if (id_table_output == "wordTable2")
-        word_table_rake_2(table_rake_for_output)
-      else if (id_table_output == "wordTable3")
-        word_table_rake_3(table_rake_for_output)
-      else if (id_table_output == "wordTable4")
-        word_table_rake_4(table_rake_for_output)
-      else if (id_table_output == "wordTable5")
-        word_table_rake_5(table_rake_for_output)
-      table_rake_for_output
-    })
-    keywords_rake_df_for_output_wordcloud <- keywords_rake_df_for_output[c("keyword", "freq")]
-    # Сортировка по столбцу freq по убыванию для облака слов
-    keywords_rake_df_for_output_wordcloud <- keywords_rake_df_for_output_wordcloud[
-      order(keywords_rake_df_for_output_wordcloud$freq, decreasing = TRUE),]
-    output[[id_wordcloud_output]] <- renderWordcloud2({
-      # wordcloud_rake_for_output <- Wordcloud2a(keywords_rake_df_for_output_wordcloud, size = 0.45)
-      # ggsave(paste(name_of_input_file, "RAKE Wordcloud.png"), plot = wordcloud_rake_for_output, width = 8, height = 6, dpi = 300)
-      # wordcloud_rake_for_output
-      # keywords_rake_df_for_output_wordcloud_top <- head(keywords_rake_df_for_output_wordcloud, amount_of_words_in_wordcloud)
-      wordcloud_rake_for_output <- head(keywords_rake_df_for_output_wordcloud, amount_of_words_in_wordcloud)
-      if (id_wordcloud_output == "wordcloud1")
-        wordcloud_data_rake_1(wordcloud_rake_for_output) 
-      else if (id_wordcloud_output == "wordcloud2")
-        wordcloud_data_rake_2(wordcloud_rake_for_output) 
-      else if (id_wordcloud_output == "wordcloud3")
-        wordcloud_data_rake_3(wordcloud_rake_for_output) 
-      else if (id_wordcloud_output == "wordcloud4")
-        wordcloud_data_rake_4(wordcloud_rake_for_output) 
-      else if (id_wordcloud_output == "wordcloud5")
-        wordcloud_data_rake_5(wordcloud_rake_for_output) 
-      # wordclouds_data_rake[[id_wordcloud_output]] <- 
-      #   keywords_rake_df_for_output_wordcloud[1:amount_of_words_in_wordcloud, ]
-      Wordcloud2a(wordcloud_rake_for_output, size = 0.45)
-    })
-    showNotification(label_calculation_end, duration = time_of_notification_duration)
-    return(keywords_rake_df)
-  }
   
-  # все команды этой функции совпадают с соотв-ми командами алгоритма для 14 регионов
-  AnalyzeAndRenderFrequency <- function(file_input, id_plot_output, id_table_output, id_wordcloud_output) {   
-    preprocessed_texts_word_list <- GetPreprocessedTextsWordList(file_input)
+  WORDS_COUNT_IN_BARPLOT <- 10
+  WORDS_COUNT_IN_TABLE <- 10
+  WORDS_COUNT_IN_WORDCLOUD <- 30
+  
+  
+  # ????все команды этой функции совпадают с соотв-ми командами алгоритма для 14 регионов
+  AnalyzeAndRenderFrequency <- function(file_input, id_barplot_output, id_table_output, id_wordcloud_output) {   
+    preprocessed_texts_word_list <- GetTFIDFKeywords(file_input)
     d <- as.data.frame(sort(table(preprocessed_texts_word_list), decreasing = TRUE))
     # show(d)
     colnames(d) <- c("word", "freq")
@@ -971,8 +983,9 @@ server <- function(input, output, session) {
     d_word_tf <- select(d, c("word", "tf"))
     
     
-    output[[id_plot_output]]  <- renderPlot({
-      barplot_tf <- ggplot(d_word_tf[1:10, ], aes(x = reorder(word, tf), y = tf)) +
+    output[[id_barplot_output]]  <- renderPlot({
+      barplot_tf <- ggplot(d_word_tf[1:WORDS_COUNT_IN_BARPLOT, ], 
+                           aes(x = reorder(word, tf), y = tf)) +
         geom_bar(stat = "identity") +
         coord_flip() +
         labs(title = "Ключевые слова", x = "Слова", y = "Term Frequency") +
@@ -981,16 +994,18 @@ server <- function(input, output, session) {
       # show(paste0(file_input, " TF Barplot.png"))
       name_of_input_file <- file_input$name
       
-      if (id_plot_output == "barPlot1")
+      if (id_barplot_output == "barPlot1")
         barplot_tf_1(barplot_tf)
-      else if (id_plot_output == "barPlot2")
+      else if (id_barplot_output == "barPlot2")
         barplot_tf_2(barplot_tf)
-      else if (id_plot_output == "barPlot3")
+      else if (id_barplot_output == "barPlot3")
         barplot_tf_3(barplot_tf)
-      else if (id_plot_output == "barPlot4")
+      else if (id_barplot_output == "barPlot4")
         barplot_tf_4(barplot_tf)
-      else if (id_plot_output == "barPlot5")
+      else if (id_barplot_output == "barPlot5")
         barplot_tf_5(barplot_tf)
+      else if (id_barplot_output == "barPlot6")
+        barplot_tf_6(barplot_tf)
       
       
       # barplot_tf_1(barplot_tf)
@@ -1002,7 +1017,7 @@ server <- function(input, output, session) {
     output[[id_table_output]] <- renderTable({
       # colnames(word_freq) <- c("Слово", "Частота встречаемости слова в корпусе текстов")
       colnames(d_word_tf) <- c("Слово", "TF")
-      table_rake_for_output <- head(d_word_tf, 10)
+      table_rake_for_output <- head(d_word_tf, WORDS_COUNT_IN_TABLE)
       
       if (id_table_output == "wordTable1")
         word_table_tf_1(table_rake_for_output)
@@ -1014,6 +1029,8 @@ server <- function(input, output, session) {
         word_table_tf_4(table_rake_for_output)
       else if (id_table_output == "wordTable5")
         word_table_tf_5(table_rake_for_output)
+      else if (id_table_output == "wordTable6")
+        word_table_tf_6(table_rake_for_output)
       
       table_rake_for_output
     }, digits = 4
@@ -1022,7 +1039,8 @@ server <- function(input, output, session) {
     #     wordcloud(d$word, d$freq, colors=brewer.pal(8, "Dark2"))
     #   })
     output[[id_wordcloud_output]] <- renderWordcloud2({
-      wordcloud_tf_for_output <- head(d_word_tf, amount_of_words_in_wordcloud)
+      wordcloud_tf_for_output <- head(d_word_tf, WORDS_COUNT_IN_WORDCLOUD
+      )
       wordcloud_data_tf_1(wordcloud_tf_for_output)
       
       if (id_wordcloud_output == "wordcloud1")
@@ -1035,29 +1053,125 @@ server <- function(input, output, session) {
         wordcloud_data_tf_4(wordcloud_tf_for_output)
       else if (id_wordcloud_output == "wordcloud5")
         wordcloud_data_tf_5(wordcloud_tf_for_output)
+      else if (id_wordcloud_output == "wordcloud6")
+        wordcloud_data_tf_6(wordcloud_tf_for_output)
       
-      Wordcloud2a(head(d_word_tf, amount_of_words_in_wordcloud), size = 0.45)
+      Wordcloud2a(head(d_word_tf, WORDS_COUNT_IN_WORDCLOUD
+      ), size = 0.45)
     })
-    showNotification(label_calculation_end, duration = time_of_notification_duration)
+    showNotification(LABEL_CALCULATIONS_COMPLETED, duration = TIME_OF_NOTIFICATION_DURATION)
     show(d)
     return(d)
   }
+  
+  
+  AnalyzeAndRenderRake <- function(file_input, id_barplot_output, id_table_output, id_wordcloud_output) { 
+    keywords_rake_df <- GetRakeKeywords(file_input)
+    # show(keywords_rake_df)
+    keywords_rake_df_for_output <- keywords_rake_df[c("keyword", "freq", "rake")]
+    # show(keywords_rake_df_for_output)
+    name_of_input_file <- file_input$name
+    output[[id_barplot_output]] <- renderPlot({
+      diagram_for_output <- ggplot(keywords_rake_df_for_output[1:WORDS_COUNT_IN_BARPLOT, ], 
+                                   aes(x = reorder(keyword, rake), y = rake)) +
+        geom_bar(stat = "identity") +
+        coord_flip() +
+        labs(title = "Слова с наибольшим индексом RAKE", x = "Слова", y = "Индекс RAKE") +
+        theme_gray(base_size = 26)
+      # # wordclouds_rake[[id_wordcloud_output]](diagram_for_output)
+      # # ggsave(paste(name_of_input_file, "RAKE Barplot.png"), plot = diagram_for_output, width = 15, height = 6, dpi = 300)
+      
+      # barplots_rake[[id_barplot_output]] <- keywords_rake_df_for_output[1:10, ]
+      if (id_barplot_output == "barPlot1")
+        barplot_rake_1(diagram_for_output)
+      else if (id_barplot_output == "barPlot2")
+        barplot_rake_2(diagram_for_output)
+      else if (id_barplot_output == "barPlot3")
+        barplot_rake_3(diagram_for_output)
+      else if (id_barplot_output == "barPlot4")
+        barplot_rake_4(diagram_for_output)
+      else if (id_barplot_output == "barPlot5")
+        barplot_rake_5(diagram_for_output)
+      else if (id_barplot_output == "barPlot6")
+        barplot_rake_6(diagram_for_output)
+      
+      diagram_for_output
+      # ggplot(keywords_rake_df_for_output[1:10, ], aes(x = reorder(keyword, rake), y = rake)) +
+      #   geom_bar(stat = "identity") +
+      #   coord_flip() +
+      #   labs(title = "Ключевые слова", x = "Слова", y = "Индекс RAKE") +
+      #   theme_gray(base_size = 26)
+    })
+    output[[id_table_output]] <- renderTable({
+      colnames(keywords_rake_df_for_output) <- c("Ключевые слова", "Частота встречаемости", "RAKE")
+      table_rake_for_output <- head(keywords_rake_df_for_output, WORDS_COUNT_IN_TABLE)
+      #ggsave(filename = paste(name_of_input_file, "RAKE Table.png"), plot = table_rake_for_output, width = 8, height = 6, dpi = 300)
+      # table_rake_for_output
+      if (id_table_output == "wordTable1")
+        word_table_rake_1(table_rake_for_output)
+      else if (id_table_output == "wordTable2")
+        word_table_rake_2(table_rake_for_output)
+      else if (id_table_output == "wordTable3")
+        word_table_rake_3(table_rake_for_output)
+      else if (id_table_output == "wordTable4")
+        word_table_rake_4(table_rake_for_output)
+      else if (id_table_output == "wordTable5")
+        word_table_rake_5(table_rake_for_output)
+      else if (id_table_output == "wordTable6")
+        word_table_rake_6(table_rake_for_output)
+      table_rake_for_output
+    })
+    keywords_rake_df_for_output_wordcloud <- keywords_rake_df_for_output[c("keyword", "freq")]
+    # Сортировка по столбцу freq по убыванию для облака слов
+    keywords_rake_df_for_output_wordcloud <- keywords_rake_df_for_output_wordcloud[
+      order(keywords_rake_df_for_output_wordcloud$freq, decreasing = TRUE),]
+    output[[id_wordcloud_output]] <- renderWordcloud2({
+      # wordcloud_rake_for_output <- Wordcloud2a(keywords_rake_df_for_output_wordcloud, size = 0.45)
+      # ggsave(paste(name_of_input_file, "RAKE Wordcloud.png"), plot = wordcloud_rake_for_output, width = 8, height = 6, dpi = 300)
+      # wordcloud_rake_for_output
+      # keywords_rake_df_for_output_wordcloud_top <- head(keywords_rake_df_for_output_wordcloud, amount_of_words_in_wordcloud)
+      wordcloud_rake_for_output <- head(keywords_rake_df_for_output_wordcloud, 
+                                        WORDS_COUNT_IN_WORDCLOUD)
+      if (id_wordcloud_output == "wordcloud1")
+        wordcloud_data_rake_1(wordcloud_rake_for_output) 
+      else if (id_wordcloud_output == "wordcloud2")
+        wordcloud_data_rake_2(wordcloud_rake_for_output) 
+      else if (id_wordcloud_output == "wordcloud3")
+        wordcloud_data_rake_3(wordcloud_rake_for_output) 
+      else if (id_wordcloud_output == "wordcloud4")
+        wordcloud_data_rake_4(wordcloud_rake_for_output) 
+      else if (id_wordcloud_output == "wordcloud5")
+        wordcloud_data_rake_5(wordcloud_rake_for_output) 
+      else if (id_wordcloud_output == "wordcloud6")
+        wordcloud_data_rake_6(wordcloud_rake_for_output) 
+      # wordclouds_data_rake[[id_wordcloud_output]] <- 
+      #   keywords_rake_df_for_output_wordcloud[1:amount_of_words_in_wordcloud, ]
+      Wordcloud2a(wordcloud_rake_for_output, size = 0.45)
+    })
+    showNotification(LABEL_CALCULATIONS_COMPLETED, duration = TIME_OF_NOTIFICATION_DURATION)
+    return(keywords_rake_df)
+  }
 
+  
+  WORDS_COUNT_IN_TRENDMAP <- 10
+  LABEL_NEED_MORE_PROCESSED_FILES <- "Для анализа должно быть обработано не менее двух файлов с помощью одного метода."
+  
     
   ObserveEventCompareFilesBtnFrequency <- function(){
     d_all <- Filter(Negate(is.null), list(files_preprocessed_data_frequency[["df_1"]], 
                                           files_preprocessed_data_frequency[["df_2"]], 
                                           files_preprocessed_data_frequency[["df_3"]],
                                           files_preprocessed_data_frequency[["df_4"]],
-                                          files_preprocessed_data_frequency[["df_5"]])) 
+                                          files_preprocessed_data_frequency[["df_5"]],
+                                          files_preprocessed_data_frequency[["df_6"]])) 
     cos.mat <- NULL
     if (length(d_all) <= 1) {
-      showNotification("Для анализа должно быть обработано не менее двух файлов с помощью одного метода.", 
-                       duration = time_of_notification_duration)
+      showNotification(LABEL_NEED_MORE_PROCESSED_FILES, 
+                       duration = TIME_OF_NOTIFICATION_DURATION)
     }
     else 
     {  
-      showNotification(label_calculation_begining, duration = time_of_notification_duration)
+      showNotification(LABEL_CALCULATIONS_IN_PROGRESS, duration = TIME_OF_NOTIFICATION_DURATION)
       amount_of_processed_files <- length(d_all)
       # d_all[[i]] содержит таблицу со столбцами word freq tf
       # Чтобы full_join происходил корректно, 
@@ -1065,7 +1179,7 @@ server <- function(input, output, session) {
       # нужно, чтобы все имена столбцов, кроме столбца, 
       # по которому происходит соединение, были разными. 
       # В данном случае для таблицы с номером i столбцы будут следующими:
-      # word freqi tfi.
+      # word freq<i> tf<i>.
       for (i in  1:amount_of_processed_files)
       {
         names(d_all[[i]]) <- c("word", paste("freq", i, sep = ""), paste("tf", i, sep = ""))
@@ -1088,7 +1202,8 @@ server <- function(input, output, session) {
       col_names_freq <- c()
       for (i in 1:amount_of_processed_files)
       {
-        col_names_word_freq_tf <- c(col_names_word_freq_tf,  paste("freq", i, sep = ""), paste("tf", i, sep = ""))
+        col_names_word_freq_tf <- c(col_names_word_freq_tf,  paste("freq", i, sep = ""), 
+                                    paste("tf", i, sep = ""))
         col_names_word_freq <- c(col_names_word_freq, paste("freq", i, sep = ""))
         col_names_freq <- c(col_names_freq, paste("freq", i, sep = ""))
       }
@@ -1096,8 +1211,8 @@ server <- function(input, output, session) {
       tf_idf <- d_all %>% select(all_of(col_names_word_freq_tf))
       tdm_df <- d_all %>% select(all_of(col_names_word_freq))
       show(tdm_df)
-      tdm_df <- tdm_df %>% mutate(num_of_occurrences = rowSums(select(tdm_df,
-                                                                      all_of(col_names_freq)) != 0))
+      tdm_df <- tdm_df %>% mutate(num_of_occurrences = 
+                                    rowSums(select(tdm_df, all_of(col_names_freq)) != 0))
       # tdm_df$num_of_occurrences - количество файлов, 
       # в которых встречается слово из столбца word
       tdm_df <- tdm_df %>% mutate(idf = log((amount_of_processed_files + 1) / 
@@ -1117,10 +1232,12 @@ server <- function(input, output, session) {
       # Средний абсолютный прирост
 
       # Из частоты последнего периода вычитается частота первого периода
-      tdm_df_with_dynamism$dynamism <- tdm_df_with_dynamism[[paste("freq", amount_of_processed_files, sep = "")]] -
+      tdm_df_with_dynamism$dynamism <- 
+        tdm_df_with_dynamism[[paste("freq", amount_of_processed_files, sep = "")]] -
         tdm_df_with_dynamism[["freq1"]]
       # И результат делится на количество периодов - 1
-      tdm_df_with_dynamism$dynamism <- tdm_df_with_dynamism$dynamism / (amount_of_processed_files - 1)
+      tdm_df_with_dynamism$dynamism <- tdm_df_with_dynamism$dynamism / 
+        (amount_of_processed_files - 1)
       # Средний коэффициент роста (Средний темп роста)
       # tdm_df_with_dynamism$dynamism <- sqrt((tdm_df_with_dynamism$freq3 / ifelse(tdm_df_with_dynamism$freq1 != 0, tdm_df_with_dynamism$freq1, 1)))
 
@@ -1155,11 +1272,16 @@ server <- function(input, output, session) {
       # ifelse(max(tdm_df_with_dynamism$freq_all) != 0, max(tdm_df_with_dynamism$freq_all), 1)  значит следующее.
       # Если max(tdm_df_with_dynamism$freq_all) != 0, то вернуть max(tdm_df_with_dynamism$freq_all),
       # иначе вернуть 1.
-      tdm_df_with_dynamism$freq_all_normalized <- (tdm_df_with_dynamism$freq_all) / ifelse(max(tdm_df_with_dynamism$freq_all) != 0, max(tdm_df_with_dynamism$freq_all), 1)  
-      tdm_df_with_dynamism$dynamism_normalized <- (tdm_df_with_dynamism$dynamism) / ifelse(max(tdm_df_with_dynamism$dynamism) != 0, max(tdm_df_with_dynamism$dynamism), 1)  
-      tdm_df_with_dynamism$freq_all_and_dynamism_normalized <- tdm_df_with_dynamism$dynamism_normalized + tdm_df_with_dynamism$freq_all_normalized
+      tdm_df_with_dynamism$freq_all_normalized <- (tdm_df_with_dynamism$freq_all) / 
+        ifelse(max(tdm_df_with_dynamism$freq_all) != 0, max(tdm_df_with_dynamism$freq_all), 1)  
+      tdm_df_with_dynamism$dynamism_normalized <- (tdm_df_with_dynamism$dynamism) / 
+        ifelse(max(tdm_df_with_dynamism$dynamism) != 0, max(tdm_df_with_dynamism$dynamism), 1)  
+      tdm_df_with_dynamism$freq_all_and_dynamism_normalized <- 
+        tdm_df_with_dynamism$dynamism_normalized + tdm_df_with_dynamism$freq_all_normalized
       # Сортировка датафрейма по столбцу freq_all_and_dynamism_normalized по убыванию
-      tdm_df_with_dynamism <- tdm_df_with_dynamism[order(tdm_df_with_dynamism$freq_all_and_dynamism_normalized, decreasing = TRUE),] 
+      tdm_df_with_dynamism <- 
+        tdm_df_with_dynamism[order(tdm_df_with_dynamism$freq_all_and_dynamism_normalized, 
+                                   decreasing = TRUE),] 
       
       
       
@@ -1179,48 +1301,50 @@ server <- function(input, output, session) {
       # })
       
      
-      output$dynamicPlotLimited <- renderPlot({
-        amount_of_words_in_plot <- 10
-        # Вывод графика для amount_of_words_in_plot слов без пересечений слов на графике. 
+      output$trendMapLimited <- renderPlot({
+        # Вывод графика для WORDS_COUNT_IN_TRENDMAP слов без пересечений слов на графике. 
         # При этом подписываются некоторые слова, хотя точки на графике есть для всех слов.
         
         
         # Нормализация данных для отображения точек на 
-        # отрезки [0, 1] для 30 слов
+        # отрезки [0, 1] для WORDS_COUNT_IN_TRENDMAP слов
         
-        # Выделение 30 слов с наибольшими значениями sum_of_rake_all_norm_and_dyn_norm 
-        tdm_df_with_dynamism_limited <- tdm_df_with_dynamism[1:amount_of_words_in_plot, ]
+        # Выделение WORDS_COUNT_IN_TRENDMAP слов с наибольшими значениями sum_of_rake_all_norm_and_dyn_norm 
+        tdm_df_with_dynamism_limited <- tdm_df_with_dynamism[1:WORDS_COUNT_IN_TRENDMAP, ]
         
         
-        # Нормализация динамики для 30 слов
+        # Нормализация динамики для WORDS_COUNT_IN_TRENDMAP слов
         
         # Нужно сместить все значения динамики, чтобы их минимум был в 0.
         # Если минимум отрицательный, то при его вычитании из остальных значений
         # новый минимум окажется в нуле (так как минус на минус дает плюс).
         # Если минимум положительный, то при его вычитании из остальных значений
         # новый минимум так же окажется в нуле.
-        tdm_df_with_dynamism_limited$dynamism_shifted_for_30 <- tdm_df_with_dynamism_limited$dynamism - 
-          min(tdm_df_with_dynamism_limited$dynamism)
+        tdm_df_with_dynamism_limited$dynamism_shifted_for_30 <- 
+          tdm_df_with_dynamism_limited$dynamism - min(tdm_df_with_dynamism_limited$dynamism)
         
         
         # После смещения все значения делятся на новый максимум, 
         # чтобы отобразить все значения динамики на отрезок [0; 1].
-        tdm_df_with_dynamism_limited$dynamism_normalized_for_30 <- tdm_df_with_dynamism_limited$dynamism_shifted_for_30 /
+        tdm_df_with_dynamism_limited$dynamism_normalized_for_30 <- 
+          tdm_df_with_dynamism_limited$dynamism_shifted_for_30 /
           ifelse(max(tdm_df_with_dynamism_limited$dynamism_shifted_for_30) != 0,
                  max(tdm_df_with_dynamism_limited$dynamism_shifted_for_30), 1)
         
         
-        # Нормализация частоты встречамости для 30 слов
+        # Нормализация частоты встречамости для WORDS_COUNT_IN_TRENDMAP слов
         
         # tdm_df_with_dynamism_limited$freq_all >= 0.
         # Нужно сместить все значения freq_all, чтобы их минимум был в 0.
         # freq_all >= 0. Значит при вычитании минимума из всех значенией, 
         # новый минимум окажется в нуле.
-        tdm_df_with_dynamism_limited$freq_all_shifted_for_30 <- tdm_df_with_dynamism_limited$freq_all - min(tdm_df_with_dynamism_limited$freq_all)
+        tdm_df_with_dynamism_limited$freq_all_shifted_for_30 <- 
+          tdm_df_with_dynamism_limited$freq_all - min(tdm_df_with_dynamism_limited$freq_all)
         
         # После смещения все значения делятся на новый максимум, 
         # чтобы отобразить все значения rake_all на отрезок [0; 1].
-        tdm_df_with_dynamism_limited$freq_all_normalized_for_30 <- (tdm_df_with_dynamism_limited$freq_all_shifted_for_30) /
+        tdm_df_with_dynamism_limited$freq_all_normalized_for_30 <- 
+          (tdm_df_with_dynamism_limited$freq_all_shifted_for_30) /
           ifelse(max(tdm_df_with_dynamism_limited$freq_all_shifted_for_30) != 0,
                  max(tdm_df_with_dynamism_limited$freq_all_shifted_for_30), 1)
         
@@ -1229,16 +1353,28 @@ server <- function(input, output, session) {
         # Смещение оси координат так, чтобы все значения динамики были >= 0. 
         # Для этого для всех выводимых слов к значениям динамики 
         # прибавляют модуль минимального значения динамики
-        dynamicPlotLimited <- ggplot(tdm_df_with_dynamism_limited[1:amount_of_words_in_plot, ], aes(x = dynamism_normalized_for_30, y = freq_all_normalized_for_30, label = word)) +
-          geom_point() +
-          # geom_label_repel(max.overlaps = 10, label.size = 10) +
-          geom_text_repel(max.overlaps = 10, size = 7) +
+        trendMapLimited <- ggplot(tdm_df_with_dynamism_limited[1:WORDS_COUNT_IN_TRENDMAP, ], 
+                                     aes(x = dynamism_normalized_for_30, 
+                                         y = freq_all_normalized_for_30, 
+                                         label = word)) +
+          geom_point() + # creates scatterplot (не нашел быстро перевод на русский)
+          # geom_label_repel - аналог для geom_text_repel, но с рамкой вокруг каждой фразы (слова)
+          # geom_label_repel(max.overlaps = 10, label.size = 0.7) + # 
+          # max.overlaps - исключает слова, которые пересекаются слишком много раз;
+          # size - размер выводимых слов;
+          # force - сила отталкивания пересекающихся слов (по умолчанию 1).
+          geom_text_repel(force = 2, size = 7) +
           labs(x = "Динамика", y = "Значимость", title = paste0("Тренд-карта")) +
           theme_classic(base_size = 26)
-        ggsave("30 слов TF.png", plot = dynamicPlotLimited, width = 8, height = 6, dpi = 300)
-        trend_map_reactive_tf(dynamicPlotLimited)
-        showNotification(label_calculation_end, duration = time_of_notification_duration)
-        return(dynamicPlotLimited)
+        ggsave("30 слов TF.png", plot = trendMapLimited, width = 8, height = 6, dpi = 300)
+        trend_map_plot_tf(trendMapLimited)
+        # Для перевода тренд-карты на английский язык
+        trend_map_df_tf(tdm_df_with_dynamism_limited[1:WORDS_COUNT_IN_TRENDMAP, 
+                                                     c("word", "dynamism_normalized_for_30", 
+                                                       "freq_all_normalized_for_30")])
+        
+        showNotification(LABEL_CALCULATIONS_COMPLETED, duration = TIME_OF_NOTIFICATION_DURATION)
+        return(trendMapLimited)
       })
     }
   }
@@ -1249,15 +1385,16 @@ server <- function(input, output, session) {
                                           files_preprocessed_data_rake[["df_2"]],
                                           files_preprocessed_data_rake[["df_3"]],
                                           files_preprocessed_data_rake[["df_4"]],
-                                          files_preprocessed_data_rake[["df_5"]]))
+                                          files_preprocessed_data_rake[["df_5"]],
+                                          files_preprocessed_data_rake[["df_6"]]))
     cos.mat <- NULL
     if (length(d_all) <= 1) {
-      showNotification("Для анализа должно быть обработано не менее двух файлов с помощью одного метода.",
-                       duration = time_of_notification_duration)
+      showNotification(LABEL_NEED_MORE_PROCESSED_FILES,
+                       duration = TIME_OF_NOTIFICATION_DURATION)
     }
     else
     {
-      showNotification(label_calculation_begining, duration = time_of_notification_duration)
+      showNotification(LABEL_CALCULATIONS_IN_PROGRESS, duration = TIME_OF_NOTIFICATION_DURATION)
       amount_of_processed_files <- length(d_all)
 
       # d_all[[i]] содержит таблицу со столбцами keyword ngram freq rake
@@ -1273,7 +1410,9 @@ server <- function(input, output, session) {
         for (i in  1:amount_of_processed_files)
         {
           # show(names(d_all[[i]]))
-          names(d_all[[i]]) <- c("keyword", paste("ngram", i, sep = ''), paste("freq", i, sep = ""), paste("rake", i, sep = ""))
+          names(d_all[[i]]) <- c("keyword", paste("ngram", i, sep = ''), 
+                                 paste("freq", i, sep = ""), 
+                                 paste("rake", i, sep = ""))
           # show(names(d_all[[i]]))
         }
         res <- d_all[[1]]
@@ -1329,7 +1468,9 @@ server <- function(input, output, session) {
         # tdm_df_with_dynamism$dynamism <- (tdm_df_with_dynamism$freq2 - tdm_df_with_dynamism$freq1) / ifelse(tdm_df_with_dynamism$freq1 != 0, tdm_df_with_dynamism$freq1, 1)
 
         # Средний абсолютный прирост
-        rake_df_with_dynamism$dynamism <- rake_df_with_dynamism[[paste("rake", amount_of_processed_files, sep = "")]]
+        rake_df_with_dynamism$dynamism <- rake_df_with_dynamism[[paste("rake", 
+                                                                       amount_of_processed_files, 
+                                                                       sep = "")]]
         for (i in (amount_of_processed_files - 1):1)
         {
           rake_df_with_dynamism$dynamism <- (rake_df_with_dynamism$dynamism -
@@ -1373,16 +1514,15 @@ server <- function(input, output, session) {
       #   ggsave("Все слова.png", plot = plot_all, width = 8, height = 6, dpi = 300)
       #   return(plot_all)
       # })
-      output$dynamicPlotLimited <- renderPlot({
-        amount_of_words_in_plot <- 10
-        # Вывод графика для amount_of_words_in_plot слов без пересечений слов на графике.
+      output$trendMapLimited <- renderPlot({
+        # Вывод графика для WORDS_COUNT_IN_TRENDMAP слов без пересечений слов на графике.
         # При этом подписываются некоторые слова, хотя точки на графике есть для всех слов.
 
         # Нормализация данных для отображения точек на
         # отрезки [0, 1] для 30 слов
 
         # Выделение 30 слов с наибольшими значениями sum_of_rake_all_norm_and_dyn_norm
-        rake_df_with_dynamism_limited <- rake_df_with_dynamism[1:amount_of_words_in_plot, ]
+        rake_df_with_dynamism_limited <- rake_df_with_dynamism[1:WORDS_COUNT_IN_TRENDMAP, ]
 
 
         # Нормализация динамики для 30 слов
@@ -1416,19 +1556,28 @@ server <- function(input, output, session) {
         rake_df_with_dynamism_limited$rake_all_normalized_for_30 <- (rake_df_with_dynamism_limited$rake_all_shifted_for_30) /
           ifelse(max(rake_df_with_dynamism_limited$rake_all_shifted_for_30) != 0,
                  max(rake_df_with_dynamism_limited$rake_all_shifted_for_30), 1)
-
-
+        
+        # В rake_df_with_dynamism_limited находятся столбцы: keyword, rake1, ..., raken,
+        # rake_all, dynamism, rake_all_normalized, dynamism_normalized, sum_of_rake_all_norm_and_dyn_norm,
+        # dynamism_shifted_for_30, dynamism_normalized_for_30, rake_all_shifted_for_30, rake_all_normalized_for_30
         plot_limited <- ggplot(rake_df_with_dynamism_limited, aes(x = dynamism_normalized_for_30, y = rake_all_normalized_for_30, label = keyword)) +
-          geom_point() +
-          geom_text_repel(max.overlaps = 10, size = 7) +
+          geom_point() + # creates scatterplot (не нашел быстро перевод на русский)
+          # geom_label_repel - аналог для geom_text_repel, но с рамкой вокруг каждой фразы (слова)
+          # geom_label_repel(max.overlaps = 10, label.size = 0.7) + # 
+          # max.overlaps - исключает слова, которые пересекаются слишком много раз;
+          # size - размер выводимых слов;
+          # force - сила отталкивания пересекающихся слов (по умолчанию 1).
+          geom_text_repel(force = 2, size = 7) +
           labs(x = "Динамика", y = "Значимость", title = paste0("Тренд-карта")) +
           theme_classic(base_size = 26)
         # Сохранение графика в директорию с запускаемой программой
         # Для width и height значение 1 значит 300 пискселей, 2 - 600, ...
-        trend_map_reactive_rake(plot_limited)
-        ggsave(paste0(amount_of_words_in_plot, " слов RAKE.png"), plot = plot_limited, width = 8, height = 6, dpi = 300)
-
-        showNotification(label_calculation_end, duration = time_of_notification_duration)
+        trend_map_plot_rake(plot_limited)
+        trend_map_df_rake(data.frame(rake_df_with_dynamism_limited[,c("keyword", "dynamism_normalized_for_30", "rake_all_normalized_for_30")]))
+        View(data.frame(rake_df_with_dynamism_limited[,c("keyword", "dynamism_normalized_for_30", "rake_all_normalized_for_30")]))
+        ggsave(paste0(WORDS_COUNT_IN_TRENDMAP, " слов RAKE.png"), plot = plot_limited, width = 8, height = 6, dpi = 300)
+        
+        showNotification(LABEL_CALCULATIONS_COMPLETED, duration = TIME_OF_NOTIFICATION_DURATION)
         return(plot_limited)
       })
     }
@@ -1449,7 +1598,7 @@ server <- function(input, output, session) {
   # 
   # output$download_plot <- downloadHandler(
   #   filename = function() {
-  #     paste0("my_plot_", Sys.Date(), ".png")
+  #     paste0("my_plot_", Sys.time(), ".png")
   #   },
   #   content = function(file) {
   #     ggsave(file, plot = saved_plot(), width = 6, height = 4)
@@ -1459,7 +1608,7 @@ server <- function(input, output, session) {
   
   # output$downloadData1 <- downloadHandler(
   #   filename = function() {
-  #     paste("data1-", Sys.Date(), ".zip", sep="")
+  #     paste("data1-", Sys.time(), ".zip", sep="")
   #   },
   #   content = function(file) {
   #     tmpdir <- tempdir()
@@ -1525,9 +1674,10 @@ server <- function(input, output, session) {
   #   }
   # )
   
+  
   output$downloadData1 <- downloadHandler(
     filename = function() {
-      paste("data1-", Sys.Date(), ".zip", sep = "")
+      paste("data1-", Sys.time(), ".zip", sep = "")
     },
     content = function(file) {
       # Создаем временную директорию
@@ -1552,6 +1702,10 @@ server <- function(input, output, session) {
             # Сохраняем wordcloud
             png(f1_rake, width = 800, height = 600)
             print(wordcloud(wordcloud_data_rake_1()[["keyword"]], wordcloud_data_rake_1()[["freq"]], min.freq = 0))
+            # print(wordcloud(wordcloud_data_rake_1()[["keyword"]], 
+            #                 wordcloud_data_rake_1()[["freq"]], 
+            #                 min.freq = 0,
+            #                 colors = brewer.pal(8, "Dark2")))
             dev.off()
             
             # Сохраняем barplot
@@ -1612,9 +1766,10 @@ server <- function(input, output, session) {
     }
   )
   
+  
   output$downloadData2 <- downloadHandler(
     filename = function() {
-      paste("data2-", Sys.Date(), ".zip", sep="")
+      paste("data2-", Sys.time(), ".zip", sep="")
     },
     content = function(file) {
       # Создаем временную директорию
@@ -1698,9 +1853,11 @@ server <- function(input, output, session) {
       })
     }
   )
+  
+  
   output$downloadData3 <- downloadHandler(
     filename = function() {
-      paste("data3-", Sys.Date(), ".zip", sep="")
+      paste("data3-", Sys.time(), ".zip", sep="")
     },
     content = function(file) {
       # Создаем временную директорию
@@ -1784,9 +1941,11 @@ server <- function(input, output, session) {
       })
     }
   )
+  
+  
   output$downloadData4 <- downloadHandler(
     filename = function() {
-      paste("data4-", Sys.Date(), ".zip", sep="")
+      paste("data4-", Sys.time(), ".zip", sep="")
     },
     content = function(file) {
       # Создаем временную директорию
@@ -1870,9 +2029,11 @@ server <- function(input, output, session) {
       })
     }
   )
+  
+  
   output$downloadData5 <- downloadHandler(
     filename = function() {
-      paste("data-", Sys.Date(), ".zip", sep="")
+      paste("data-", Sys.time(), ".zip", sep="")
     },
     content = function(file) {
       # Создаем временную директорию
@@ -1956,9 +2117,11 @@ server <- function(input, output, session) {
       })
     }
   )
-  output$downloadDataCompare <- downloadHandler(
+  
+  
+  output$downloadData6 <- downloadHandler(
     filename = function() {
-      paste("data-", Sys.Date(), ".zip", sep="")
+      paste("data-", Sys.time(), ".zip", sep="")
     },
     content = function(file) {
       # Создаем временную директорию
@@ -1972,42 +2135,55 @@ server <- function(input, output, session) {
       tryCatch({
         if (input$radio == 2) {
           # Проверяем наличие данных для RAKE
-          if (!is.null(cos_mat_reactive_rake()) && 
-              !is.null(trend_map_reactive_rake())) {
+          if (!is.null(wordcloud_data_rake_6()) && 
+              !is.null(barplot_rake_6()) && 
+              !is.null(word_table_rake_6())) {
             
-            f1_rake <- "cos_matrix_rake.csv"
-            f2_rake <- "trend_map_rake.png"
+            f1_rake <- "wordcloud_rake.png"
+            f2_rake <- "barPlot_rake.png"
+            f3_rake <- "table_rake.csv"
             
-            write.csv(cos_mat_reactive_rake(), f1_rake, row.names = FALSE, col.names = FALSE)
             # Сохраняем wordcloud
-            
-            png(f2_rake, width = 800, height = 600)
-            print(trend_map_reactive_rake())
+            png(f1_rake, width = 800, height = 600)
+            print(wordcloud(wordcloud_data_rake_6()[["keyword"]], wordcloud_data_rake_6()[["freq"]], min.freq = 0))
             dev.off()
-
-           
             
-            files_to_zip <- c(f1_rake, f2_rake)
+            # Сохраняем barplot
+            png(f2_rake, width = 800, height = 600)
+            print(barplot_rake_6())
+            dev.off()
+            
+            # Сохраняем таблицу
+            write.csv(word_table_rake_6(), f3_rake, row.names = FALSE)
+            
+            files_to_zip <- c(f1_rake, f2_rake, f3_rake)
             valid_files <- TRUE
           }
         } 
         else if (input$radio == 1) {
           # Проверяем наличие данных для TF
-          if (!is.null(cos_mat_reactive_tf()) && 
-              !is.null(trend_map_reactive_tf())) {
+          if (!is.null(wordcloud_data_tf_6()) && 
+              !is.null(barplot_tf_6()) && 
+              !is.null(word_table_tf_6())) {
             
-            f1_tf <- "cos_matrix_tf_idf.csv"
-            f2_tf <- "trend_map_tf_idf.png"
+            f1_tf <- "wordcloud_tf.png"
+            f2_tf <- "barPlot_tf.png"
+            f3_tf <- "table_tf.csv"
             
-            write.csv(cos_mat_reactive_tf(), f1_tf, row.names = FALSE, col.names = FALSE)
             # Сохраняем wordcloud
-            
-            png(f2_tf, width = 800, height = 600)
-            print(trend_map_reactive_tf())
+            png(f1_tf, width = 800, height = 600)
+            print(wordcloud(wordcloud_data_tf_1()[["word"]], wordcloud_data_tf_1()[["tf"]], min.freq = 0))
             dev.off()
             
+            # Сохраняем barplot
+            png(f2_tf, width = 800, height = 600)
+            print(barplot_tf_6())
+            dev.off()
             
-            files_to_zip <- c(f1_tf, f2_tf)
+            # Сохраняем таблицу
+            write.csv(word_table_tf_6(), f3_tf, row.names = FALSE)
+            
+            files_to_zip <- c(f1_tf, f2_tf, f3_tf)
             valid_files <- TRUE
           }
         }
@@ -2029,6 +2205,91 @@ server <- function(input, output, session) {
       })
     }
   )
+  
+  
+  output$downloadDataCompare <- downloadHandler(
+    filename = function() {
+      paste("data-", Sys.time(), ".zip", sep="")
+    },
+    content = function(file) {
+      # Создаем временную директорию
+      tmpdir <- tempdir()
+      oldwd <- setwd(tmpdir)
+      on.exit(setwd(oldwd))
+      
+      files_to_zip <- character(0)
+      valid_files <- FALSE
+      
+      tryCatch({
+        if (input$radio == 2) {
+          # Проверяем наличие данных для RAKE
+          if (!is.null(cos_mat_reactive_rake()) && 
+              !is.null(trend_map_plot_rake())) { 
+            # TODO: Стоит ли добавить !is.null(trend_map_df_rake() в условие?
+            # Для перевода тренд-карт на английский язык
+            file_name_df <- "trend_map_rake.csv" 
+            write.csv(trend_map_df_rake(), file_name_df, row.names = FALSE, col.names = FALSE)
+            
+            file_name_cos <- "cos_matrix_rake.csv"
+            file_name_plot <- "trend_map_rake.png"
+            write.csv(cos_mat_reactive_rake(), file_name_cos, row.names = FALSE, col.names = FALSE)
+            
+            # Открывает графическое устройство для записи в файл file_name_plot
+            png(file_name_plot, width = 800, height = 600)
+            # Явно выводит (печатает) графический объект, возвращаемый функцией trend_map_plot_rake()
+            print(trend_map_plot_rake())
+            # Закрывает графическое устройство, завершая сохранение файла. 
+            # Без этого вызова файл может остаться повреждённым или пустым.
+            dev.off()
+
+            files_to_zip <- c(file_name_cos, file_name_plot, file_name_df)
+            valid_files <- TRUE
+          }
+        } 
+        else if (input$radio == 1) {
+          # Проверяем наличие данных для TF
+          if (!is.null(cos_mat_reactive_tf()) && 
+              !is.null(trend_map_plot_tf())) {
+            # TODO: Стоит ли добавить !is.null(trend_map_df_tf() в условие?
+            # Для перевода тренд-карт на английский язык
+            file_name_df <- "trend_map_tf_idf.csv" 
+            write.csv(trend_map_df_tf(), file_name_df, row.names = FALSE, col.names = FALSE)
+            
+            file_name_cos <- "cos_matrix_tf_idf.csv"
+            file_name_plot <- "trend_map_tf_idf.png"
+            write.csv(cos_mat_reactive_tf(), file_name_cos, row.names = FALSE, col.names = FALSE)
+            
+            # Открывает графическое устройство для записи в файл file_name_plot
+            png(file_name_plot, width = 800, height = 600)
+            # Явно выводит (печатает) графический объект, возвращаемый функцией trend_map_plot_rake()
+            print(trend_map_plot_tf())
+            # Закрывает графическое устройство, завершая сохранение файла. 
+            # Без этого вызова файл может остаться повреждённым или пустым.
+            dev.off()
+            
+            files_to_zip <- c(file_name_cos, file_name_plot, file_name_df)
+            valid_files <- TRUE
+          }
+        }
+        
+        if (valid_files && length(files_to_zip) > 0) {
+          # Проверяем существование файлов перед архивацией
+          existing_files <- files_to_zip[file.exists(files_to_zip)]
+          
+          if (length(existing_files) > 0) {
+            zip::zip(zipfile = file, files = existing_files)
+          } else {
+            stop("Файлы для архивации не были созданы")
+          }
+        } else {
+          stop("Нет данных для экспорта. Сначала создайте таблицу и графики.")
+        }
+      }, error = function(e) {
+        stop(sprintf("Ошибка при создании архива: %s", e$message))
+      })
+    }
+  )
+  
   
   observeEvent(input$analyze1, {
     if (input$radio == 1) 
@@ -2079,6 +2340,16 @@ server <- function(input, output, session) {
     if (input$radio == 2)
     {
       files_preprocessed_data_rake[["df_5"]] <- AnalyzeAndRenderRake(input[["file5"]], "barPlot5", "wordTable5", "wordcloud5")
+    }
+  })
+  observeEvent(input$analyze6, {
+    if (input$radio == 1) 
+    {
+      files_preprocessed_data_frequency[["df_6"]] <- AnalyzeAndRenderFrequency(input[["file6"]], "barPlot6", "wordTable6", "wordcloud6")
+    }
+    if (input$radio == 2)
+    {
+      files_preprocessed_data_rake[["df_6"]] <- AnalyzeAndRenderRake(input[["file6"]], "barPlot6", "wordTable6", "wordcloud")
     }
   })
   observeEvent(input[["compareFilesBtn"]], {
